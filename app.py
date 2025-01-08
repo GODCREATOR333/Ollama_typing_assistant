@@ -1,19 +1,34 @@
 import time
 from string import Template
-
+import os
 import httpx
 from pynput import keyboard
 from pynput.keyboard import Key, Controller
 import pyperclip
 
 
+print("Ollama typign assistant is Live use F2 to fix the current line and F4 to fix the selected text")
+
+
+# Set DISPLAY for the first monitor (Primary)
+os.environ["DISPLAY"] = ":0"  # This is usually the default display for the primary monitor
+# Add your logic for the first monitor
+
+# Set DISPLAY for the second monitor (Secondary)
+os.environ["DISPLAY"] = ":1"  # This will target the secondary monitor
+# Add your logic for the second monitor
+
+
 controller = Controller()
+
+
 
 OLLAMA_ENDPOINT = "http://localhost:11434/api/generate"
 OLLAMA_CONFIG = {
     "model": "llama3.2",
     "keep_alive": "5m",
     "stream": False,
+    "num_ctx":4096 #The context window length
 }
 
 PROMPT_TEMPLATE = Template(
@@ -27,6 +42,11 @@ Return only the corrected text, don't include a preamble.
 
 
 def fix_text(text):
+
+     # Check if the text is empty or the same as the previous one
+    if not text.strip():
+        return ""  # Return empty string if no text is selected
+    
     prompt = PROMPT_TEMPLATE.substitute(text=text)
     response = httpx.post(
         OLLAMA_ENDPOINT,
@@ -56,7 +76,7 @@ def fix_current_line():
     controller.release(Key.ctrl)
     controller.release('c')
 
-    # Wait for clipboard to update
+    # Wait for clipbord to udate
     time.sleep(0.1)
 
     # Get the copied text from the clipboard
@@ -95,7 +115,7 @@ def fix_selection():
     fixed_text = fix_text(text)
     if not fixed_text:
         return
-
+    
     # 4. Paste the fixed string to the clipboard
     pyperclip.copy(fixed_text)
     time.sleep(0.1)
@@ -105,7 +125,7 @@ def fix_selection():
         controller.tap("v")
 
 
-def on_f3():
+def on_f2():
     fix_current_line()
 
 
@@ -113,6 +133,6 @@ def on_f4():
     fix_selection()
 
 
-# Update the hotkeys to use F3 and F4 for Ubuntu
-with keyboard.GlobalHotKeys({"<f3>": on_f3, "<f4>": on_f4}) as h:
+# Update the hotkeys to use F2 and F4 for Ubuntu
+with keyboard.GlobalHotKeys({"<f2>": on_f2, "<f4>": on_f4}) as h:
     h.join()
